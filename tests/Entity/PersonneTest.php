@@ -4,6 +4,7 @@ namespace Tests\Entity;
 
 use App\Entity\Person;
 use App\Entity\Wallet;
+use App\Entity\Product;
 use PHPUnit\Framework\TestCase;
 
 class PersonneTest extends TestCase
@@ -28,7 +29,6 @@ class PersonneTest extends TestCase
 
     public function testSetNamePersonne(): void
     {
-//        $personne = new Person("John Doe", "EUR");
         self::$personne->setName("Jane Doe");
         $this->assertEquals("Jane Doe", self::$personne->getName());
     }
@@ -57,6 +57,60 @@ class PersonneTest extends TestCase
         $this->assertEquals(50.0, $personne->getWallet()->getBalance());
     }
 
+    public function testHasFund(): void
+    {
+        $this->assertFalse(self::$personne->hasFund());
+        self::$personne->getWallet()->addFund(50);
+        $this->assertTrue(self::$personne->hasFund());
+    }
 
+    /**
+     * @throws \Exception
+     */
+    public function testTransfertFund(): void
+    {
+        self::$personne->getWallet()->addFund(100);
+        self::$personne2->getWallet()->addFund(50);
 
+        self::$personne->transfertFund(30, self::$personne2);
+
+        $this->assertEquals(70.0, self::$personne->getWallet()->getBalance());
+        $this->assertEquals(80.0, self::$personne2->getWallet()->getBalance());
+    }
+
+    public function testTransfertFundDifferentCurrencies(): void
+    {
+        $this->expectException(\Exception::class);
+        self::$personne->transfertFund(30, self::$personne3);
+    }
+
+    public function testDivideWallet(): void
+    {
+        self::$personne->getWallet()->addFund(100);
+        self::$personne2->getWallet()->addFund(50);
+
+        self::$personne->divideWallet([self::$personne, self::$personne2]);
+
+        $this->assertEquals(75.0, self::$personne->getWallet()->getBalance());
+        $this->assertEquals(75.0, self::$personne2->getWallet()->getBalance());
+    }
+
+    public function testBuyProduct(): void
+    {
+        $product = new Product("Laptop", ["EUR" => 800], "tech");
+
+        self::$personne->getWallet()->addFund(1000);
+        self::$personne->buyProduct($product);
+
+        $this->assertEquals(200.0, self::$personne->getWallet()->getBalance());
+    }
+
+    public function testBuyProductInvalidCurrency(): void
+    {
+        $this->expectException(\Exception::class);
+        $product = new Product("Laptop", ["USD" => 800], "tech");
+
+        self::$personne->getWallet()->addFund(1000);
+        self::$personne->buyProduct($product);
+    }
 }
